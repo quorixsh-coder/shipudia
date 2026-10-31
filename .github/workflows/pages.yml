@@ -1,0 +1,34 @@
+name: Deploy Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip site
+        run: |
+          mkdir -p tmp _site
+          unzip -q ./*.zip -d tmp
+          f=$(find tmp -name index.html | awk '{print length($0) " " $0}' | sort -n | head -1 | cut -d' ' -f2-)
+          cp -r "$(dirname "$f")"/. _site/
+          touch _site/.nojekyll
+          ls -la _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: d
+        uses: actions/deploy-pages@v4
